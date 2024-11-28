@@ -30,8 +30,8 @@ function [eigenvalues, eigenvectors] = jacobi_rotation(A, tol, max_iter)
         else
             t = -xi - sqrt(1 + xi^2);
         end
-        c = 1 / sqrt(1 + t^2);
-        s = t * c;
+        c = 1 / sqrt(1 + t^2); % cosinus
+        s = t * c;              % sinus
         
         % Zastosuj rotację Jacobiego
         R = eye(N);
@@ -75,10 +75,49 @@ A = [4, 1, 2, 3;
 tol = 1e-8;      % Tolerancja zerowania
 max_iter = 100;  % Maksymalna liczba iteracji
 
-[eigenvalues, eigenvectors] = jacobi_rotation(A, tol, max_iter);
+[eigenvalues1, eigenvectors1] = jacobi_rotation(A, tol, max_iter);
 
 disp('Wartości własne:');
-disp(eigenvalues);
+disp(eigenvalues1);
 
 disp('Wektory własne:');
-disp(eigenvectors);
+disp(eigenvectors1);
+
+B = [4, 6, 2, 5; 
+     6, 3, 1, 2; 
+     2, 1, 2, 1; 
+     5, 2, 1, 5];
+
+[eigenvalues2, eigenvectors2] = jacobi_rotation(B, tol, max_iter);
+
+disp('Wartości własne:');
+disp(eigenvalues2);
+
+disp('Wektory własne:');
+disp(eigenvectors2);
+
+B = [4, 6, 2; 
+     6, 3, 1; 
+     2, 1, 2;];
+
+[eigenvalues2, eigenvectors2] = jacobi_rotation(B, tol, max_iter);
+
+disp('Wartości własne:');
+disp(eigenvalues2);
+
+disp('Wektory własne:');
+disp(eigenvectors2);
+
+B = [4, 2, 2, 1, 2; 
+     2, 3, 1, 2, 0; 
+     2, 1, 2, 1, 4; 
+     1, 2, 1, 5, 4;
+     2, 0, 4, 4, 1];
+
+[eigenvalues2, eigenvectors2] = jacobi_rotation(B, tol, max_iter);
+
+disp('Wartości własne:');
+disp(eigenvalues2);
+
+disp('Wektory własne:');
+disp(eigenvectors2);
