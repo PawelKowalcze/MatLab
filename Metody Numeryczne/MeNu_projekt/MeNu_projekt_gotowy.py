@@ -37,7 +37,7 @@ for realization in range(num_realizations):
     # time integration loop -> PDE is solved using iterative algorithm
     for time_step_index in range(1, num_time_steps):
         u2 = np.zeros(num_spatial_points + 1)  # placeholder for the next time step
-        for j in range(2, num_spatial_points):  # update interior points
+        for j in range(2, num_spatial_points):  # update interior points. numeryczne rozwiązanie równania różniczkowego cząstkowego
             u2[j] = (q[j] * (u1[j + 1] - 2 * u1[j] + u1[j - 1]) + 2 * u1[j] - u0[j])
 
         # periodic boundary conditions
