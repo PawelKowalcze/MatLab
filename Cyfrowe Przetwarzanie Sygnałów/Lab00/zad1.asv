@@ -1,0 +1,14 @@
+clear all; close all;
+fpr=44100; Nx=3*fpr;              % parametry: czestotliwosc probkowania, liczba probek             
+dt = 1/fpr;                     % okres probkowania 
+n = 0 : Nx-1;                   % numery probek        
+t = 0:10:dt;                       % chwile probkowania
+A1 = 0.5;
+f1 = 1000;
+fd = 5000;
+f = zw
+
+  
+p1=0; % sinusoida: amplituda, czestotliwosc, faza
+x = A1*cos(2*pi*f1*t+p1);
+plot(t,x,'bo-'); grid; title('Sygnal x(t)'); xlabel('Czas [s]'); ylabel('Amplituda');
