@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('TkAgg')
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -33,7 +35,7 @@ for i in range(N):
     plt.plot(A[i], label=f'Row {i} of A')
     plt.plot(S[:, i], label=f'Column {i} of S')
     plt.legend()
-    plt.pause(0.2)
+    plt.pause(0.5)
     plt.close()
 
 # Perform analysis y = Ax
