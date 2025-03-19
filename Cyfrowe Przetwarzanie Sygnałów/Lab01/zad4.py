@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('TkAgg')
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io.wavfile import write
@@ -23,7 +25,6 @@ for bit in binary_string:
     else:
         signal = np.concatenate((signal, -np.sin(2 * np.pi * fc1 * t)))
 
-print(signal)
 # Plot the signal
 plt.figure(figsize=(10, 5))
 plt.plot(np.arange(len(signal)) / fpr, signal)

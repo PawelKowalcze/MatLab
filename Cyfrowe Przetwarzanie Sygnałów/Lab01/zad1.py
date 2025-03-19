@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('TkAgg')
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import welch
@@ -43,66 +45,66 @@ plt.legend()
 plt.title('Próbkowanie sygnału 50 Hz dla różnych częstotliwości próbkowania')
 plt.grid()
 plt.show()
-
-# C. Zmiana częstotliwości sygnału od 0 Hz do 300 Hz co 5 Hz
-f_sweep = np.arange(0, 305, 5)  # wartości od 0 Hz do 300 Hz co 5 Hz
-sampling_rate_C = 100  # Hz
-duration_C = 1  # sekunda
-
-plt.figure(figsize=(10, 5))
-for i, f in enumerate(f_sweep):
-    t, signal = generate_signal(f, sampling_rate_C, duration_C)
-    plt.plot(t, signal, alpha=0.5)
-    print(f'Obieg: {i+1}, Częstotliwość: {f} Hz')
-    plt.xlabel('Czas [s]')
-    plt.ylabel('Amplituda')
-    plt.title('Zmiana częstotliwości od 0 do 300 Hz co 5 Hz')
-    plt.grid()
-    plt.show()
-
-# Porównanie wybranych częstotliwości sinusoidy
-frequencies_to_compare = [(5, 105, 205), (95, 195, 295), (95, 105)]
-for group in frequencies_to_compare:
-    plt.figure(figsize=(10, 5))
-    for f in group:
-        t, signal = generate_signal(f, sampling_rate_C, duration_C)
-        plt.plot(t, signal, label=f'{f} Hz')
-    plt.xlabel('Czas [s]')
-    plt.ylabel('Amplituda')
-    plt.legend()
-    plt.title(f'Porównanie częstotliwości: {group}')
-    plt.grid()
-    plt.show()
-
-# Powtórzenie eksperymentu dla kosinusoidy
-def generate_cosine_signal(frequency, sampling_rate, duration, amplitude=230):
-    t = np.arange(0, duration, 1 / sampling_rate)
-    signal = amplitude * np.cos(2 * np.pi * frequency * t)
-    return t, signal
-
-plt.figure(figsize=(10, 5))
-for i, f in enumerate(f_sweep):
-    t, signal = generate_cosine_signal(f, sampling_rate_C, duration_C)
-    plt.plot(t, signal, alpha=0.5)
-    print(f'Obieg: {i+1}, Częstotliwość: {f} Hz')
-    plt.xlabel('Czas [s]')
-    plt.ylabel('Amplituda')
-    plt.title('Zmiana częstotliwości od 0 do 300 Hz co 5 Hz (kosinus)')
-    plt.grid()
-    plt.show()
-
-# Porównanie wybranych częstotliwości kosinusoidy
-for group in frequencies_to_compare:
-    plt.figure(figsize=(10, 5))
-    for f in group:
-        t, signal = generate_cosine_signal(f, sampling_rate_C, duration_C)
-        plt.plot(t, signal, label=f'{f} Hz')
-    plt.xlabel('Czas [s]')
-    plt.ylabel('Amplituda')
-    plt.legend()
-    plt.title(f'Porównanie częstotliwości (kosinus): {group}')
-    plt.grid()
-    plt.show()
+#
+# # C. Zmiana częstotliwości sygnału od 0 Hz do 300 Hz co 5 Hz
+# f_sweep = np.arange(0, 305, 5)  # wartości od 0 Hz do 300 Hz co 5 Hz
+# sampling_rate_C = 100  # Hz
+# duration_C = 1  # sekunda
+#
+# plt.figure(figsize=(10, 5))
+# for i, f in enumerate(f_sweep):
+#     t, signal = generate_signal(f, sampling_rate_C, duration_C)
+#     plt.plot(t, signal, alpha=0.5)
+#     print(f'Obieg: {i+1}, Częstotliwość: {f} Hz')
+#     plt.xlabel('Czas [s]')
+#     plt.ylabel('Amplituda')
+#     plt.title('Zmiana częstotliwości od 0 do 300 Hz co 5 Hz')
+#     plt.grid()
+#     plt.show()
+#
+# # Porównanie wybranych częstotliwości sinusoidy
+# frequencies_to_compare = [(5, 105, 205), (95, 195, 295), (95, 105)]
+# for group in frequencies_to_compare:
+#     plt.figure(figsize=(10, 5))
+#     for f in group:
+#         t, signal = generate_signal(f, sampling_rate_C, duration_C)
+#         plt.plot(t, signal, label=f'{f} Hz')
+#     plt.xlabel('Czas [s]')
+#     plt.ylabel('Amplituda')
+#     plt.legend()
+#     plt.title(f'Porównanie częstotliwości: {group}')
+#     plt.grid()
+#     plt.show()
+#
+# # Powtórzenie eksperymentu dla kosinusoidy
+# def generate_cosine_signal(frequency, sampling_rate, duration, amplitude=230):
+#     t = np.arange(0, duration, 1 / sampling_rate)
+#     signal = amplitude * np.cos(2 * np.pi * frequency * t)
+#     return t, signal
+#
+# plt.figure(figsize=(10, 5))
+# for i, f in enumerate(f_sweep):
+#     t, signal = generate_cosine_signal(f, sampling_rate_C, duration_C)
+#     plt.plot(t, signal, alpha=0.5)
+#     print(f'Obieg: {i+1}, Częstotliwość: {f} Hz')
+#     plt.xlabel('Czas [s]')
+#     plt.ylabel('Amplituda')
+#     plt.title('Zmiana częstotliwości od 0 do 300 Hz co 5 Hz (kosinus)')
+#     plt.grid()
+#     plt.show()
+#
+# # Porównanie wybranych częstotliwości kosinusoidy
+# for group in frequencies_to_compare:
+#     plt.figure(figsize=(10, 5))
+#     for f in group:
+#         t, signal = generate_cosine_signal(f, sampling_rate_C, duration_C)
+#         plt.plot(t, signal, label=f'{f} Hz')
+#     plt.xlabel('Czas [s]')
+#     plt.ylabel('Amplituda')
+#     plt.legend()
+#     plt.title(f'Porównanie częstotliwości (kosinus): {group}')
+#     plt.grid()
+#     plt.show()
 
 
 #D. SFM
