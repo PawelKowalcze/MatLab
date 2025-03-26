@@ -41,12 +41,16 @@ plt.show()
 
 # Obliczenie X3 dla f = -2000:0.25:2000 Hz
 f_extended = np.arange(-2000, 2000.25, 0.25)
+X1_extended = np.fft.fft(x, len(f_extended)) / N
+X2_extended = np.fft.fft(xz, len(f_extended)) / (N + M)
 X3_extended = np.array([np.sum(x * np.exp(-1j * 2 * np.pi * fi * t)) / N for fi in f_extended])
+
+
 
 # Rysowanie rozszerzonych widm
 plt.figure()
-plt.plot(fx1, np.abs(X1), 'o', label='X1')
-plt.plot(fx2, np.abs(X2), 'bx', label='X2')
+plt.plot(f_extended, np.abs(X1_extended), 'o', label='X1')
+plt.plot(f_extended, np.abs(X2_extended), 'bx', label='X2')
 plt.plot(f_extended, np.abs(X3_extended), 'k-', label='X3')
 plt.xlabel('Frequency (Hz)')
 plt.ylabel('Amplitude')

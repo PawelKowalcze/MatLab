@@ -26,6 +26,11 @@ for m in range(K):
 # Wyznacz harmoniczne
 harmonics = np.fft.fftfreq(N)
 print(harmonics)
+fs = 1000  # Example sampling frequency
+harmonic_frequencies = harmonics * fs
+print(harmonic_frequencies)
+
+
 # Wyświetl wyniki
 plt.figure(figsize=(12, 8))
 for i, fft_result in enumerate(fft_results):

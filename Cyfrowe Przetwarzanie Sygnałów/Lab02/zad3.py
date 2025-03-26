@@ -30,13 +30,13 @@ A = generate_dct_matrix(N)
 S = A.T
 
 # Display rows of A and columns of S
-for i in range(N):
-    plt.figure()
-    plt.plot(A[i], label=f'Row {i} of A')
-    plt.plot(S[:, i], label=f'Column {i} of S')
-    plt.legend()
-    plt.pause(0.5)
-    plt.close()
+# for i in range(N):
+#     plt.figure()
+#     plt.plot(A[i], label=f'Row {i} of A')
+#     plt.plot(S[:, i], label=f'Column {i} of S')
+#     plt.legend()
+#     plt.pause(0.5)
+#     plt.close()
 
 # Perform analysis y = Ax
 y = np.dot(A, x)

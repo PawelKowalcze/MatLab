@@ -26,6 +26,7 @@ I = np.eye(N)
 SA = np.dot(S, A)
 print("I:" , I)
 print("SA:" , SA)
+print("SA-I:" , SA-I)
 is_identity = np.allclose(SA, I)
 print(f"SA equals the identity matrix: {is_identity}")
 
