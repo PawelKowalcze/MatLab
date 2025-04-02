@@ -8,14 +8,15 @@ N = 1024
 
 # Generowanie losowych danych o rozkładzie normalnym
 x = np.random.normal(size=N)
+# x = np.sin(2 * np.pi * 200 * np.arange(N) / N) + np.sin(2 * np.pi * 800 * np.arange(N) / N)
 
 # Tworzenie sygnału pomocniczego y(n)
 y = x[0::2] + 1j * x[1::2]
 
 # Wykonanie N/2-punktowej transformaty Fouriera
-start_time_alternate = time.time()
+start_time_alternate = time.perf_counter_ns()
 Y = np.fft.fft(y)
-end_time_alternate = time.time()
+end_time_alternate = time.perf_counter_ns()
 
 # Odtworzenie pełnej transformaty X(k)
 X = np.zeros(N, dtype=complex)
@@ -30,17 +31,17 @@ X[0] = np.real(Y[0]) + np.imag(Y[0])
 X[N2-1] = np.real(Y[N2-1]) - 1j * np.imag(Y[N2-1])
 
 # Wykonanie standardowej N-punktowej transformaty FFT dla porównania
-start_time_standard = time.time()
+start_time_standard = time.perf_counter_ns()
 X_standard = np.fft.fft(x)
-end_time_standard = time.time()
+end_time_standard = time.perf_counter_ns()
 
 # Obliczenie czasu wykonania
 time_alternate = end_time_alternate - start_time_alternate
 time_standard = end_time_standard - start_time_standard
 
 
-print(f"Czas wykonania metody alternatywnej: {time_alternate:.15f} s")
-print(f"Czas wykonania standardowej FFT: {time_standard:.15f} s")
+print(f"Czas wykonania metody alternatywnej: {time_alternate} ns")
+print(f"Czas wykonania standardowej FFT: {time_standard} ns")
 
 
 # Wykresy
