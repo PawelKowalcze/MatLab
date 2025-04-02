@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Parametry
-N = 100
+N = 1000
 fs = 1000
 t = np.arange(N) / fs
 f1, f2 = 100, 200
@@ -16,7 +16,7 @@ x = A1 * np.cos(2 * np.pi * f1 * t + phi1) + A2 * np.cos(2 * np.pi * f2 * t + ph
 k = np.arange(N)
 n = np.arange(N)
 WN = np.exp(-1j * 2 * np.pi / N)
-A = np.array([[WN**(k_i * n_j) for n_j in n] for k_i in k]) / np.sqrt(N)
+A = np.array([[WN**(-k_i * n_j) for n_j in n] for k_i in k]) / np.sqrt(N)
 
 # Oblicz DFT
 X = np.dot(A, x)
@@ -26,25 +26,25 @@ frequencies = np.fft.fftfreq(N, 1/fs)
 plt.figure(figsize=(12, 8))
 
 plt.subplot(2, 2, 1)
-plt.stem(frequencies, np.real(X))
+plt.plot(frequencies, np.real(X))
 plt.title('Część rzeczywista')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Amplituda')
 
 plt.subplot(2, 2, 2)
-plt.stem(frequencies, np.imag(X))
+plt.plot(frequencies, np.imag(X))
 plt.title('Część urojona')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Amplituda')
 
 plt.subplot(2, 2, 3)
-plt.stem(frequencies, np.abs(X))
+plt.plot(frequencies, np.abs(X))
 plt.title('Moduł')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Amplituda')
 
 plt.subplot(2, 2, 4)
-plt.stem(frequencies, np.angle(X))
+plt.plot(frequencies, np.angle(X))
 plt.title('Faza')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Faza (radiany)')
@@ -75,25 +75,25 @@ X = np.dot(A, x)
 plt.figure(figsize=(12, 8))
 
 plt.subplot(2, 2, 1)
-plt.stem(frequencies, np.real(X))
+plt.plot(frequencies, np.real(X))
 plt.title('Część rzeczywista (f1 = 100 Hz)')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Amplituda')
 
 plt.subplot(2, 2, 2)
-plt.stem(frequencies, np.imag(X))
+plt.plot(frequencies, np.imag(X))
 plt.title('Część urojona (f1 = 100 Hz)')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Amplituda')
 
 plt.subplot(2, 2, 3)
-plt.stem(frequencies, np.abs(X))
+plt.plot(frequencies, np.abs(X))
 plt.title('Moduł (f1 = 100 Hz)')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Amplituda')
 
 plt.subplot(2, 2, 4)
-plt.stem(frequencies, np.angle(X))
+plt.plot(frequencies, np.angle(X))
 plt.title('Faza (f1 = 100 Hz)')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Faza (radiany)')
@@ -112,25 +112,25 @@ X = np.dot(A, x)
 plt.figure(figsize=(12, 8))
 
 plt.subplot(2, 2, 1)
-plt.stem(frequencies, np.real(X))
+plt.plot(frequencies, np.real(X))
 plt.title('Część rzeczywista (f1 = 125 Hz)')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Amplituda')
 
 plt.subplot(2, 2, 2)
-plt.stem(frequencies, np.imag(X))
+plt.plot(frequencies, np.imag(X))
 plt.title('Część urojona (f1 = 125 Hz)')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Amplituda')
 
 plt.subplot(2, 2, 3)
-plt.stem(frequencies, np.abs(X))
+plt.plot(frequencies, np.abs(X))
 plt.title('Moduł (f1 = 125 Hz)')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Amplituda')
 
 plt.subplot(2, 2, 4)
-plt.stem(frequencies, np.angle(X))
+plt.plot(frequencies, np.angle(X))
 plt.title('Faza (f1 = 125 Hz)')
 plt.xlabel('Częstotliwość (Hz)')
 plt.ylabel('Faza (radiany)')

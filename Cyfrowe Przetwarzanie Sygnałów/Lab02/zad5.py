@@ -34,7 +34,7 @@ plt.show()
 
 # Synthesize speech using 25% of the DCT coefficients
 num_coeffs_25 = len(c) // 4
-y_25 = idct(np.concatenate([c[:num_coeffs_25], np.zeros(len(c) - num_coeffs_25)]), norm='ortho')
+y_25 = dct(np.concatenate([c[:num_coeffs_25], np.zeros(len(c) - num_coeffs_25)]), norm='ortho')
 
 # Play the synthesized signal with 25% coefficients
 sd.play(y_25, fs)
@@ -42,7 +42,7 @@ sd.wait()
 
 # Synthesize speech using 75% of the DCT coefficients
 num_coeffs_75 = len(c) * 3 // 4
-y_75 = idct(np.concatenate([np.zeros(len(c) - num_coeffs_75), c[-num_coeffs_75:]]), norm='ortho')
+y_75 = dct(np.concatenate([np.zeros(len(c) - num_coeffs_75), c[-num_coeffs_75:]]), norm='ortho')
 
 # Play the synthesized signal with 75% coefficients
 sd.play(y_75, fs)
@@ -90,7 +90,7 @@ sd.wait()
 c_noisy = dct(x_noisy, norm='ortho')
 
 # Zero out the noise coefficients
-c_noisy[250:260] = 0
+c_noisy[240:260] = 0
 
 # Perform inverse DCT to remove noise
 y_denoised = idct(c_noisy, norm='ortho')

@@ -27,6 +27,7 @@ def check_orthonormality(A):
             print(f"Skalarne iloczyny wektorów {i} i {j}: {dot_product}")
             #Sprawdż czy iloczyn skalarny jest równy 1 dla i=j i 0 dla i!=j
             if i == j:
+
                 if not np.isclose(dot_product, 1):
                     return False
             else:

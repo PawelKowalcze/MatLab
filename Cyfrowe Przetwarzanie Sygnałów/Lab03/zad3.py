@@ -26,6 +26,16 @@ plt.legend()
 plt.grid()
 plt.show()
 
+# Wyświetlenie widma w skali logarytmicznej
+plt.figure()
+plt.plot(f, 20 * np.log10(np.abs(X3)), 'k-', label='Bez okna')
+plt.xlabel('Częstotliwość (Hz)')
+plt.ylabel('Amplituda (dB)')
+plt.title('Widmo sygnału x(t) w skali logarytmicznej')
+plt.legend()
+plt.grid()
+plt.show()
+
 # Okna
 windows = {
     'Prostokątne': np.ones(N),
