@@ -17,8 +17,7 @@ def compare_signals(x, X2, label):
 
 def main():
     # Read the reference FFT result from MATLAB
-    mat_data = scipy.io.loadmat('x.mat')
-    x = mat_data['x'].flatten()
+    x = read_fft_result('xcpp.dat', np.float64)
 
     # Read the FFT results from C/C++ files
     X_float = read_fft_result('fft_float.dat', np.float32)

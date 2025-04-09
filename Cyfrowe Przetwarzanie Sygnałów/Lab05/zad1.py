@@ -16,6 +16,10 @@ w = np.linspace(0, 30, 1000)
 # Odpowiedź częstotliwościowa
 _, h = freqresp((b, a), w)
 
+
+# Faza transmitancji
+H_phase = np.angle(h)
+
 # Moduł transmitancji (liniowo i w dB)
 H_jw = np.abs(h)
 H_db = 20 * np.log10(H_jw)
@@ -54,4 +58,15 @@ plt.ylabel('Im')
 plt.legend()
 plt.grid(True)
 plt.axis('equal')
+plt.show()
+
+# Rysowanie wykresu fazowo-częstotliwościowego
+plt.figure(figsize=(10, 6))
+plt.plot(w, H_phase, color='blue', label='Charakterystyka fazowa')
+plt.title('Charakterystyka fazowo-częstotliwościowa')
+plt.xlabel('ω [rad/s]')
+plt.ylabel('Faza [rad]')
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
 plt.show()

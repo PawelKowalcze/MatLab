@@ -15,7 +15,7 @@ x1 = np.sin(2 * np.pi * 200 * t) + np.sin(2 * np.pi * 800 * t)  # 2xSIN
 x2 = np.sin(2 * np.pi * (0 * t + 0.5 * ((1 / T) * fpr / 4) * t**2))  # LFM
 fm = 0.5
 x3 = np.sin(2 * np.pi * ((fpr / 4) * t - (fpr / 8) / (2 * np.pi * fm) * np.cos(2 * np.pi * fm * t)))  # SFM
-x = x1  # wybór
+x = x3  # wybór
 
 # Rysunek sygnału
 plt.figure()
@@ -26,7 +26,7 @@ plt.grid()
 plt.show()
 
 # Widmo FFT
-Mwind = 256
+Mwind = 512
 Mstep = 16
 Mfft = 2 * Mwind
 Many = (N - Mwind) // Mstep + 1
@@ -103,10 +103,10 @@ def myspectrogram(x, fs=1.0, window='hann', nperseg=256, noverlap=None, nfft=Non
 # Przykład użycia
 f, t, Sxx = myspectrogram(x, fs=fpr, window='hamming', nperseg=Mwind, noverlap=Mwind-Mstep, nfft=Mfft, mode='magnitude')
 
-plt.figure()
-plt.pcolormesh(t, f, 20 * np.log10(Sxx), shading='gouraud')
-plt.colorbar(label='V (dB)')
-plt.xlabel('t (s)')
-plt.ylabel('f (Hz)')
-plt.title('STFT |X(t,f)|')
-plt.show()
+# plt.figure()
+# plt.pcolormesh(t, f, 20 * np.log10(Sxx), shading='gouraud')
+# plt.colorbar(label='V (dB)')
+# plt.xlabel('t (s)')
+# plt.ylabel('f (Hz)')
+# plt.title('STFT |X(t,f)|')
+# plt.show()

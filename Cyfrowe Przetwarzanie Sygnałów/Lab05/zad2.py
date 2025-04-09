@@ -33,9 +33,9 @@ for N in N_values:
     ax_phase.plot(frequencies, H_phase, label=f'N={N}')
 
 # Opisy i legendy
-ax_amp[0].set(title='Amplituda (skala liniowa)', xlabel='f [Hz]', ylabel='[dB]', grid=True)
-ax_amp[1].set(title='Amplituda (skala log)', xlabel='f [Hz]', ylabel='[dB]', grid=True)
-ax_phase.set(title='Faza', xlabel='f [Hz]', ylabel='[rad]', grid=True)
+ax_amp[0].set(title='Amplituda (skala liniowa)', xlabel='f [Hz]', ylabel='[dB]')
+ax_amp[1].set(title='Amplituda (skala log)', xlabel='f [Hz]', ylabel='[dB]')
+ax_phase.set(title='Faza', xlabel='f [Hz]', ylabel='[rad]')
 for ax in ax_amp: ax.legend()
 ax_phase.legend()
 plt.tight_layout()
@@ -57,8 +57,8 @@ t_step, y_step = step(H)
 # Rysowanie
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6))
 ax1.plot(t_imp, y_imp)
-ax1.set(title='Odpowiedź impulsowa (N=4)', xlabel='Czas [s]', ylabel='Amplituda', grid=True)
+ax1.set(title='Odpowiedź impulsowa (N=4)', xlabel='Czas [s]', ylabel='Amplituda')
 ax2.plot(t_step, y_step)
-ax2.set(title='Odpowiedź skokowa (N=4)', xlabel='Czas [s]', ylabel='Amplituda', grid=True)
+ax2.set(title='Odpowiedź skokowa (N=4)', xlabel='Czas [s]', ylabel='Amplituda')
 plt.tight_layout()
 plt.show()

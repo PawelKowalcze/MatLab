@@ -8,7 +8,7 @@ dt = 1 / fpr
 t = dt * np.arange(N)  # chwile próbkowania sygnału, oś czasu
 
 # Sygnał
-f0 = 125
+f0 = 100
 x = 10 * np.sin(2 * np.pi * f0 * t)  # sygnał o częstotliwości f0 = 50 Hz
 
 # Wykres sygnału
