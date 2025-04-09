@@ -15,7 +15,7 @@ x1 = np.sin(2 * np.pi * 200 * t) + np.sin(2 * np.pi * 800 * t)  # 2xSIN
 x2 = np.sin(2 * np.pi * (0 * t + 0.5 * ((1 / T) * fpr / 4) * t**2))  # LFM
 fm = 0.5
 x3 = np.sin(2 * np.pi * ((fpr / 4) * t - (fpr / 8) / (2 * np.pi * fm) * np.cos(2 * np.pi * fm * t)))  # SFM
-x = x3  # wybór
+x = x1  # wybór
 
 # Rysunek sygnału
 plt.figure()
