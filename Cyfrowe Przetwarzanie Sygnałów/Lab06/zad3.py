@@ -1,102 +1,172 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import butter, lfilter, welch, find_peaks, freqz
+from scipy.signal import butter, lfilter, welch, find_peaks
+from scipy.signal import freqz
 
-# Parametry
-fs = 256e3  # Częstotliwość próbkowania (Hz)
-t = np.linspace(0, 1, int(fs), endpoint=False)  # Oś czasu
-wideband_signal = np.sin(2 * np.pi * 50e3 * t) + np.sin(2 * np.pi * 100e3 * t)  # Sygnał szerokopasmowy
 
-# 1. Charakterystyki czasowo-częstotliwościowe i widma gęstości mocy
-def plot_psd(signal, fs, title):
-    f, Pxx = welch(signal, fs, window='hamming', nperseg=1024)
-    plt.semilogy(f, Pxx)
-    plt.title(title)
-    plt.xlabel('Częstotliwość [Hz]')
-    plt.ylabel('Gęstość mocy [V^2/Hz]')
-    plt.grid()
+fs = 3200000     #  Częstotliwość próbkowania
+N = int(32e6)      # liczba próbek
+fc = -407812.5      #Częstotliwość przesunięcia stacji
+bwSERV = 80000    # Pasmo jednej stacji FM
+bwAUDIO = 16000   # Pasmo audio mono
 
-plt.figure(figsize=(10, 6))
-plt.subplot(2, 1, 1)
-plt.plot(t, wideband_signal)
-plt.title("Sygnał szerokopasmowy w dziedzinie czasu")
-plt.xlabel("Czas [s]")
-plt.ylabel("Amplituda")
-plt.grid()
 
-plt.subplot(2, 1, 2)
-plot_psd(wideband_signal, fs, "Widmo gęstości mocy sygnału szerokopasmowego")
-plt.tight_layout()
-plt.show()
+with open("samples_100MHz_fs3200kHz.raw", "rb") as f:
+    s = np.fromfile(f, dtype=np.uint8, count=2*N)
 
-# 2. Wyszukiwanie stacji radiowych
-f, Pxx = welch(wideband_signal, fs, window='hamming', nperseg=1024)
-peaks, _ = find_peaks(Pxx, height=np.max(Pxx) * 0.1)  # Wykrywanie "górek"
-station_freqs = f[peaks]
-print("Częstotliwości stacji radiowych:", station_freqs)
+s = s.astype(np.int16) - 127
 
-# 3. Filtr cyfrowy Butterworth LP (80 kHz)
+I = s[::2]
+Q = s[1::2]
+wideband_signal = I + 1j * Q # sygnal do postaci zespolonej, aby lepiej mozna bylo analizowa sygnal
+
+
+t = np.arange(N) / fs
+wideband_signal_shifted = wideband_signal * np.exp(-1j * 2 * np.pi * fc * t) # ustawiamy stacje na komkretna czestotliwosc
+
+
 def butter_lowpass(cutoff, fs, order=4):
-    nyq = fs / 2
-    normal_cutoff = cutoff / nyq
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    nyq = 0.5 * fs
+    norm_cutoff = cutoff / nyq
+    return butter(order, norm_cutoff, btype='low')
+
+b, a = butter_lowpass(80_000, fs, order=4)
+wideband_signal_filtered = lfilter(b, a, wideband_signal_shifted)  # przepuszczamy tylko okolice +-80khz dla naszej stacji wybtanej
+
+
+x = wideband_signal_filtered[::int(fs / (2 * bwSERV))]  # zmniejszamy liczbe probek bo nie potrzeba nam az tak szerokiego pasma
+
+dx = x[1:] * np.conj(x[:-1])
+y = np.angle(dx) # demodulacja doczytac jak to dziala
+
+b2, a2 = butter_lowpass(16_000, 160_000, order=4)
+y_filtered = lfilter(b2, a2, y)
+ym = y_filtered[::int(160_000 / (2 * bwAUDIO))]
+
+def deemphasis_filter(fs, tau=75e-6):
+    dt = 1 / fs
+    alpha = dt / (tau + dt)
+    b = [alpha]
+    a = [1, alpha - 1]
     return b, a
 
-b, a = butter_lowpass(80e3, fs)
-filtered_signal = lfilter(b, a, wideband_signal)
+b_de, a_de = deemphasis_filter(32_000)
+ym = lfilter(b_de, a_de, ym)
 
-plt.figure(figsize=(10, 6))
-plt.subplot(2, 1, 1)
-plot_psd(filtered_signal, fs, "Widmo gęstości mocy po filtrze LP (80 kHz)")
-plt.subplot(2, 1, 2)
-w, h = freqz(b, a, worN=8000)
-plt.plot(0.5 * fs * w / np.pi, 20 * np.log10(abs(h)))
-plt.title("Charakterystyka amplitudowo-częstotliwościowa filtru LP (80 kHz)")
+ym -= np.mean(ym)
+ym /= 1.001 * np.max(np.abs(ym))
+
+# plotting
+f, Pxx = welch(wideband_signal, fs, nperseg=2048)
+plt.figure()
+plt.semilogy(f, Pxx)
+plt.title("Widmo gęstości mocy (wideband_signal)")
 plt.xlabel("Częstotliwość [Hz]")
-plt.ylabel("Wzmocnienie [dB]")
+plt.ylabel("PSD")
 plt.grid()
-plt.tight_layout()
-plt.show()
 
-# 4. Filtr antyaliasingowy (16 kHz)
-b_aa, a_aa = butter_lowpass(16e3, fs)
-anti_aliased_signal = lfilter(b_aa, a_aa, filtered_signal)
+threshold = 1e-3
+peaks, _ = find_peaks(Pxx, height=threshold)
+frequencies = f[peaks]
+print("Częstotliwości stacji radiowych:", frequencies)
 
-plt.figure(figsize=(10, 6))
-plot_psd(anti_aliased_signal, fs, "Widmo gęstości mocy po filtrze antyaliasingowym (16 kHz)")
-plt.tight_layout()
-plt.show()
 
-# 5. Filtr de-emfazy i pre-emfazy
-def design_deemphasis(fs):
-    cutoff = 2.1e3
-    b, a = butter(1, cutoff / (fs / 2), btype='low')
-    return b, a
-
-b_de, a_de = design_deemphasis(fs)
-deemphasized_signal = lfilter(b_de, a_de, anti_aliased_signal)
-
-plt.figure(figsize=(10, 6))
-w, h = freqz(b_de, a_de, worN=8000)
-plt.plot(0.5 * fs * w / np.pi, 20 * np.log10(abs(h)))
-plt.title("Charakterystyka amplitudowo-częstotliwościowa filtru de-emfazy")
+f, Pxx = welch(wideband_signal_shifted, fs, nperseg=2048)
+plt.figure()
+plt.semilogy(f, Pxx)
+plt.title("Widmo gęstości mocy (wideband_signal_shifted)")
 plt.xlabel("Częstotliwość [Hz]")
-plt.ylabel("Wzmocnienie [dB]")
+plt.ylabel("PSD")
 plt.grid()
-plt.tight_layout()
-plt.show()
 
-# Filtr pre-emfazy (odwrotny do de-emfazy)
-b_pre, a_pre = design_deemphasis(fs)
-preemphasized_signal = lfilter(b_pre, a_pre, deemphasized_signal)
 
-plt.figure(figsize=(10, 6))
-plt.plot(t, deemphasized_signal, label="Po de-emfazie")
-plt.plot(t, preemphasized_signal, label="Po pre-emfazie")
-plt.title("Porównanie sygnałów po de-emfazie i pre-emfazie")
+f, Pxx = welch(wideband_signal_filtered, fs, nperseg=2048)
+plt.figure()
+plt.semilogy(f, Pxx)
+plt.title("Widmo gęstości mocy (wideband_signal_filtered)")
+plt.xlabel("Częstotliwość [Hz]")
+plt.ylabel("PSD")
+plt.grid()
+
+
+f, Pxx = welch(y_filtered, 160_000, nperseg=2048) # tutaj mozemy zmieniac y->y_filtered
+plt.figure()
+plt.semilogy(f, Pxx)
+plt.title("Widmo gęstości mocy (y_filtered)")
+plt.xlabel("Częstotliwość [Hz]")
+plt.ylabel("PSD")
+plt.grid()
+
+# PSD for ym
+f, Pxx = welch(ym, 32_000, nperseg=2048)
+plt.figure()
+plt.semilogy(f, Pxx)
+plt.title("Widmo gęstości mocy (ym)")
+plt.xlabel("Częstotliwość [Hz]")
+plt.ylabel("PSD")
+plt.grid()
+
+
+plt.figure()
+plt.specgram(wideband_signal_shifted, NFFT=1024, Fs=fs, noverlap=512, cmap="plasma")
+plt.title("Spektrogram (wideband_signal_shifted)")
 plt.xlabel("Czas [s]")
-plt.ylabel("Amplituda")
+plt.ylabel("Częstotliwość [Hz]")
+plt.colorbar()
+plt.tight_layout()
+
+plt.figure()
+plt.specgram(wideband_signal_filtered, NFFT=1024, Fs=fs, noverlap=512, cmap="plasma")
+plt.title("Spektrogram (wideband_signal_filtered)")
+plt.xlabel("Czas [s]")
+plt.ylabel("Częstotliwość [Hz]")
+plt.colorbar()
+plt.tight_layout()
+
+plt.figure()
+plt.specgram(y_filtered, NFFT=1024, Fs=160_000, noverlap=512, cmap="plasma")
+plt.title("Spektrogram (y_filtered)")
+plt.xlabel("Czas [s]")
+plt.ylabel("Częstotliwość [Hz]")
+plt.colorbar()
+plt.tight_layout()
+
+plt.figure()
+plt.specgram(ym, NFFT=1024, Fs=32_000, noverlap=512, cmap="plasma")
+plt.title("Spektrogram sygnału audio (mono)")
+plt.xlabel("Czas [s]")
+plt.ylabel("Częstotliwość [Hz]")
+plt.colorbar()
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+f_cutoff = 2100
+fs_audio = 32_000
+order = 1  #20 dB/dekadę
+
+
+b_de2, a_de2 = butter(order, f_cutoff / (0.5 * fs_audio), btype='low')
+ym2 = lfilter(b_de2, a_de2, ym)
+
+
+b_pre, a_pre = butter(order, f_cutoff / (0.5 * fs_audio), btype='high')
+
+
+w, h_de = freqz(b_de2, a_de2, worN=8000, fs=fs_audio)
+_, h_pre = freqz(b_pre, a_pre, worN=8000, fs=fs_audio)
+omega = 1e-17
+plt.figure()
+plt.semilogx(w, 20 * np.log10(abs(h_de) + omega), label="Filtr de-emfazy")
+plt.semilogx(w, 20 * np.log10(abs(h_pre) +omega), label="Filtr pre-emfazy")
+plt.axvline(f_cutoff, color='green', linestyle=':', label="2.1 kHz cutoff")
+plt.title("Charakterystyki amplitudowo-częstotliwościowe")
+plt.xlabel("Częstotliwość [Hz]")
+plt.ylabel("Wzmocnienie [dB]")
+plt.grid(which='both', linestyle='--', linewidth=0.5)
 plt.legend()
-plt.grid()
 plt.tight_layout()
 plt.show()

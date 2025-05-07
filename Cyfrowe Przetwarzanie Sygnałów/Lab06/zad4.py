@@ -1,128 +1,98 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.signal import butter, lfilter, freqz, spectrogram, tf2zpk
-from pydub import AudioSegment
-from scipy.fftpack import fft
+from matplotlib import pyplot as plt
+import librosa.display
+import scipy.signal as signal
 
-# Funkcja do wczytania pliku audio
-def load_audio(file_path):
-    audio = AudioSegment.from_file(file_path)
-    samples = np.array(audio.get_array_of_samples())
-    fs = audio.frame_rate
-    return samples, fs
+y1, fs1 = librosa.load("car.wav", sr=None)
+y2, fs2 = librosa.load("bird.wav", sr=None)
 
-# Funkcja do obliczenia FFT
-def plot_fft(signal, fs, title):
-    N = len(signal)
-    f = np.fft.fftfreq(N, 1/fs)[:N//2]
-    fft_values = np.abs(fft(signal))[:N//2]
-    plt.plot(f, fft_values)
-    plt.title(f"FFT - {title}")
-    plt.xlabel("Częstotliwość [Hz]")
-    plt.ylabel("Amplituda")
-    plt.grid()
+min_len = min(len(y1), len(y2))
+y1 = y1[:min_len]
+y2 = y2[:min_len]
+y_total = y1 + y2
 
-# Funkcja do obliczenia spektrogramu
-def plot_spectrogram(signal, fs, title):
-    f, t, Sxx = spectrogram(signal, fs)
-    plt.pcolormesh(t, f, 10 * np.log10(Sxx), shading='gouraud')
-    plt.title(f"Spektrogram - {title}")
-    plt.xlabel("Czas [s]")
-    plt.ylabel("Częstotliwość [Hz]")
-    plt.colorbar(label="Moc [dB]")
+#FFT
+N_total = len(y_total)
+yf_total = np.fft.fft(y_total)
+xf_total = np.fft.fftfreq(N_total, 1/fs2)
 
-# Wczytanie plików audio
-wolf, fs_wolf = load_audio("WOLF2.wav")
-lion, fs_lion = load_audio("Lion roar animals104.wav")
-elephant, fs_elephant = load_audio("Elephant trumpeting animals129.wav")
-bird, fs_bird = load_audio("Habicht_Accipiter_gentillis_R_AMPLE-E03521A.mp3")
-
-# Dopasowanie długości i częstotliwości próbkowania
-min_length = min(len(wolf), len(lion), len(elephant), len(bird))
-wolf, lion, elephant, bird = wolf[:min_length], lion[:min_length], elephant[:min_length], bird[:min_length]
-
-# Sygnał sumy
-sum_signal = wolf + lion + elephant + bird
-
-# FFT i spektrogram dla każdego sygnału
-plt.figure(figsize=(12, 8))
-plt.subplot(2, 2, 1)
-plot_fft(wolf, fs_wolf, "Wycie wilka")
-plt.subplot(2, 2, 2)
-plot_fft(lion, fs_lion, "Ryk lwa")
-plt.subplot(2, 2, 3)
-plot_fft(elephant, fs_elephant, "Trąbienie słonia")
-plt.subplot(2, 2, 4)
-plot_fft(bird, fs_bird, "Śpiew ptaka")
-plt.tight_layout()
-plt.show()
-
-plt.figure(figsize=(12, 8))
-plt.subplot(2, 2, 1)
-plot_spectrogram(wolf, fs_wolf, "Wycie wilka")
-plt.subplot(2, 2, 2)
-plot_spectrogram(lion, fs_lion, "Ryk lwa")
-plt.subplot(2, 2, 3)
-plot_spectrogram(elephant, fs_elephant, "Trąbienie słonia")
-plt.subplot(2, 2, 4)
-plot_spectrogram(bird, fs_bird, "Śpiew ptaka")
-plt.tight_layout()
-plt.show()
-
-# FFT i spektrogram dla sygnału sumy
-plt.figure(figsize=(12, 6))
-plt.subplot(2, 1, 1)
-plot_fft(sum_signal, fs_wolf, "Sygnał sumy")
-plt.subplot(2, 1, 2)
-plot_spectrogram(sum_signal, fs_wolf, "Sygnał sumy")
-plt.tight_layout()
-plt.show()
-
-# Projektowanie filtru IIR
-def butter_bandpass(lowcut, highcut, fs, order=4):
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band')
-    return b, a
-
-# Parametry filtru
-lowcut = 300  # Dolna częstotliwość
-highcut = 3000  # Górna częstotliwość
-b, a = butter_bandpass(lowcut, highcut, fs_wolf)
-
-# Odpowiedź częstotliwościowa filtru
-w, h = freqz(b, a, worN=8000)
-plt.figure(figsize=(8, 4))
-plt.plot(0.5 * fs_wolf * w / np.pi, 20 * np.log10(abs(h)))
-plt.title("Odpowiedź częstotliwościowa filtru")
-plt.xlabel("Częstotliwość [Hz]")
-plt.ylabel("Wzmocnienie [dB]")
+plt.plot(xf_total[:N_total//2], np.abs(yf_total[:N_total//2]))
+plt.title('Widmo FFT suma')
+plt.xlabel('Częstotliwość [Hz]')
+plt.ylabel('Amplituda')
 plt.grid()
 plt.show()
 
-# Zera i bieguny filtru
-zeros, poles, _ = tf2zpk(b, a)
-plt.figure(figsize=(6, 6))
-plt.scatter(np.real(zeros), np.imag(zeros), s=50, label="Zera", color='blue')
-plt.scatter(np.real(poles), np.imag(poles), s=50, label="Bieguny", color='red')
-plt.title("Zera i bieguny filtru")
-plt.xlabel("Re")
-plt.ylabel("Im")
-plt.axhline(0, color='black', linewidth=0.5)
-plt.axvline(0, color='black', linewidth=0.5)
+N1 = len(y1)
+yf1 = np.fft.fft(y1)
+xf1 = np.fft.fftfreq(N1, 1/fs1)
+
+plt.plot(xf1[:N1//2], np.abs(yf1[:N1//2]))
+plt.title('Widmo FFT - silnik')
+plt.xlabel('Częstotliwość [Hz]')
+plt.ylabel('Amplituda')
 plt.grid()
+plt.show()
+
+N2 = len(y2)
+yf2 = np.fft.fft(y2)
+xf2 = np.fft.fftfreq(N2, 1/fs2)
+
+plt.plot(xf2[:N2//2], np.abs(yf2[:N2//2]))
+plt.title('Widmo FFT - ptak')
+plt.xlabel('Częstotliwość [Hz]')
+plt.ylabel('Amplituda')
+plt.grid()
+plt.show()
+
+#spektogram
+D_total = librosa.stft(y_total)
+S_db = librosa.amplitude_to_db(np.abs(D_total), ref=np.max)
+librosa.display.specshow(S_db, sr=fs1, x_axis='time', y_axis='hz')
+plt.colorbar(format='%+1.5f dB')
+plt.title('Spektrogram - suma')
+plt.show()
+
+
+D_1 = librosa.stft(y1)
+S_db_1 = librosa.amplitude_to_db(np.abs(D_1), ref=np.max)
+librosa.display.specshow(S_db_1, sr=fs1, x_axis='time', y_axis='hz')
+plt.colorbar(format='%+1.5f dB')
+plt.title('Spektrogram - silnik')
+plt.show()
+
+
+D_2 = librosa.stft(y2)
+S_db_2 = librosa.amplitude_to_db(np.abs(D_2), ref=np.max)
+librosa.display.specshow(S_db_2, sr=fs2, x_axis='time', y_axis='hz')
+plt.colorbar(format='%+1.5f dB')
+plt.title('Spektrogram - ptak')
+plt.show()
+
+
+cutoff = 1500
+order = 4
+b, a = signal.butter(order, cutoff / (0.5 * fs1), btype='low')
+
+
+y_filtered = signal.lfilter(b, a, y_total)
+
+N_filtered = len(y_filtered)
+yf_filtered = np.fft.fft(y_filtered)
+xf_filtered = np.fft.fftfreq(N_filtered, 1/fs1)
+
+
+D_filtered = librosa.stft(y_filtered)
+S_filtered = librosa.amplitude_to_db(np.abs(D_filtered), ref=np.max)
+librosa.display.specshow(S_filtered, sr=fs1, x_axis='time', y_axis='hz')
+plt.colorbar(format='%+2.0f dB')
+plt.title("Spektrogram - po filtrze")
+plt.show()
+
+zeros = np.roots(b)
+poles = np.roots(b)
+
+plt.plot(np.real(zeros), np.imag(zeros), 'go', label='zeros')
+plt.plot(np.real(poles), np.imag(poles), 'k*', label='bieguny')
 plt.legend()
-plt.show()
-
-# Filtracja sygnału sumy
-filtered_signal = lfilter(b, a, sum_signal)
-
-# FFT i spektrogram dla sygnału po filtracji
-plt.figure(figsize=(12, 6))
-plt.subplot(2, 1, 1)
-plot_fft(filtered_signal, fs_wolf, "Sygnał po filtracji")
-plt.subplot(2, 1, 2)
-plot_spectrogram(filtered_signal, fs_wolf, "Sygnał po filtracji")
-plt.tight_layout()
 plt.show()

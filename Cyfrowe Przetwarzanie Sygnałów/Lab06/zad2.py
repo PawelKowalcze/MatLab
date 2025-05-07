@@ -1,129 +1,179 @@
+import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.signal as signal
-import soundfile as sf
-from scipy.fft import fft
-from collections import defaultdict
+from scipy.signal import bilinear, lfilter, zpk2tf, freqz
+from scipy.io import wavfile
+from scipy.signal import spectrogram
+import warnings
 
-# -------------------------------
-# Parametry i konfiguracja
-# -------------------------------
-fs = 8000  # Częstotliwość próbkowania (dla lab06.zip zwykle 8kHz)
-frame_len = 0.05  # długość okna analizy w sekundach
+# Wczytanie danych z pliku .mat
+mat_data = scipy.io.loadmat('butter.mat')
+z, p, k = mat_data['z'].flatten(), mat_data['p'].flatten(), mat_data['k'].flatten()
 
-# -------------------------------
-# 1. Wczytanie sygnału
-# -------------------------------
-filename = "s0.wav"  # <- zmień na odpowiedni plik!
-signal_raw, fs = sf.read(filename)
+fs = 16000
+f_low, f_high = 1189, 1229
 
-# -------------------------------
-# 2. Spectrogram (ręczne rozkodowanie)
-# -------------------------------
-plt.figure(figsize=(10, 4))
-plt.specgram(signal_raw, NFFT=4096, Fs=fs, noverlap=512)
-plt.title("Spectrogram sygnału DTMF")
-plt.xlabel("Czas [s]")
-plt.ylabel("Częstotliwość [Hz]")
+# Konwersja do funkcji przenoszenia (filtr analogowy)
+b_s, a_s = zpk2tf(z, p, k)
+
+# Odpowiedź częstotliwościowa filtru analogowego
+w, h = freqz(b_s, a_s, worN=8000, fs=fs)
+
+# Przekształcenie filtru analogowego do cyfrowego za pomocą transformacji biliniowej
+b_z, a_z = bilinear(b_s, a_s, fs)
+w_z, h_z = freqz(b_z, a_z, worN=8000, fs=fs)
+
+# Wczytanie pliku audio
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    fs, sX = wavfile.read('s7.wav')
+
+# Obliczenie spektrogramu sygnału przed filtracją
+f, t, Sxx = spectrogram(sX, fs=fs, nperseg=4096, noverlap=4096-512, scaling='density')
+
+# Wizualizacja spektrogramu przed filtracją
+plt.figure(figsize=(12, 5))
+plt.pcolormesh(t, f, 10 * np.log10(Sxx), shading='gouraud')
+plt.ylabel('Częstotliwość [Hz]')
+plt.xlabel('Czas [s]')
+plt.title('Spektrogram sygnału sX przed filtracją')
+plt.colorbar(label='Amplituda [dB]')
+plt.ylim(0, 2000)  # Tylko zakres DTMF
 plt.grid()
-plt.tight_layout()
+plt.show()
+
+# Filtracja sygnału sX (implementacja filtru BP)
+filtered_sX = np.zeros_like(sX)
+for n in range(len(sX)):
+    for i in range(len(b_z)):
+        if n - i >= 0:
+            filtered_sX[n] += b_z[i] * sX[n - i]
+    for j in range(1, len(a_z)):
+        if n - j >= 0:
+            filtered_sX[n] -= a_z[j] * filtered_sX[n - j]
+    filtered_sX[n] /= a_z[0]
+
+# Skompensowanie opóźnienia sygnału (przesunięcie o połowę długości filtra)
+delay = len(b_z) // 2
+filtered_sX_compensated = np.roll(filtered_sX, -delay)
+filtered_sX_lib = lfilter(b_z, a_z, sX)
+
+time = np.arange(len(sX)) / fs
+time_filt = np.arange(len(filtered_sX_compensated)) / fs
+
+
+
+time_filt_lib = np.arange(len(filtered_sX_lib)) / fs
+plt.figure(figsize=(12, 5))
+plt.plot(time, sX, label='Oryginalny sygnał')
+plt.plot(time_filt_lib, filtered_sX_lib, label='Po filtracji')
+plt.title('Sygnał przed i po filtracji w dziedzinie czasu')
+plt.xlabel('Czas [s]')
+plt.ylabel('Amplituda')
+plt.legend()
+plt.grid(True)
 plt.show()
 
 
-# -------------------------------
-# 3. Filtracja pasmowo-przepustowa (opcjonalnie – ćwiczenie 1)
-# -------------------------------
-def bandpass_filter(data, lowcut, highcut, fs, order=4):
-    nyq = fs / 2
-    sos = signal.butter(order, [lowcut / nyq, highcut / nyq], btype='bandpass', output='sos')
-    return signal.sosfilt(sos, data)
+## ZADANIE 2.1
 
+#Algorytm Goertzla
+import numpy as np
 
-filtered_signal = bandpass_filter(signal_raw, 697, 1477, fs)
+# Funkcja Goertzla
+def goertzel(samples, fs, target_freq):
+    N = len(samples)
+    k = int(0.5 + N * target_freq / fs)
+    w = 2 * np.pi * k / N
+    coeff = 2 * np.cos(w)
 
-# Porównanie spektrogramów
-plt.figure(figsize=(12, 4))
-plt.subplot(1, 2, 1)
-plt.specgram(signal_raw, NFFT=1024, Fs=fs, noverlap=256)
-plt.title("Przed filtracją")
+    s0, s1, s2 = 0.0, 0.0, 0.0
+    for n in range(N):
+        s0 = samples[n] + coeff * s1 - s2
+        s2 = s1
+        s1 = s0
 
-plt.subplot(1, 2, 2)
-plt.specgram(filtered_signal, NFFT=1024, Fs=fs, noverlap=256)
-plt.title("Po filtracji")
-plt.tight_layout()
-plt.show()
+    real = s1 - s2 * np.cos(w)
+    imag = s2 * np.sin(w)
+    return real**2 + imag**2
 
-# -------------------------------
-# 4. Transformata Goertzla
-# -------------------------------
-dtmf_freqs = {
+# Częstotliwości DTMF
+dtmf_low = [697, 770, 852, 941]
+dtmf_high = [1209, 1336, 1477]
+
+# Mapa klawiszy
+dtmf_keys = {
     (697, 1209): '1', (697, 1336): '2', (697, 1477): '3',
     (770, 1209): '4', (770, 1336): '5', (770, 1477): '6',
     (852, 1209): '7', (852, 1336): '8', (852, 1477): '9',
     (941, 1209): '*', (941, 1336): '0', (941, 1477): '#'
 }
 
-row_freqs = [697, 770, 852, 941]
-col_freqs = [1209, 1336, 1477]
-all_freqs = row_freqs + col_freqs
+# Parametry
+segment_duration = 0.5  # sekundy
+N = int(segment_duration * fs)
+num_segments = int(len(sX) / N)
+threshold = 1e6  # Próg mocy dla detekcji tonu – można zmienić
+
+# Analiza segmentów
+# Wybrane czasy segmentów (w sekundach)
+selected_times = [0.5, 1.5, 2.5, 4.5, 5.5]
+
+for t in selected_times:
+    i = int(t / segment_duration)
+    segment_start_time = i * segment_duration
+    segment = sX[i*N:(i+1)*N]
+
+    powers = {}
+    print(f"\n--- Czas {segment_start_time:.1f}s: Amplitudy (moc Goertzla) ---")
+    for f in dtmf_low + dtmf_high:
+        powers[f] = goertzel(segment, fs, f)
+        print(f"{f} Hz: {powers[f]:.2e}")
+
+    max_power = max(powers.values())
+    if max_power < threshold:
+        print(f"Brak wyraźnego tonu (max moc: {max_power:.2e})")
+        continue
+
+    # Znajdź dominujące częstotliwości
+    low_freq = max(dtmf_low, key=lambda f: powers[f])
+    high_freq = max(dtmf_high, key=lambda f: powers[f])
+
+    key = dtmf_keys.get((low_freq, high_freq), '?')
+    print(f"==> Naciśnięto '{key}' (low: {low_freq} Hz, high: {high_freq} Hz)")
 
 
-def goertzel_mag(x, f, fs):
-    N = len(x)
-    k = int(0.5 + N * f / fs)
-    omega = 2 * np.pi * k / N
-    coeff = 2 * np.cos(omega)
-    s_prev = 0
-    s_prev2 = 0
-    for n in x:
-        s = n + coeff * s_prev - s_prev2
-        s_prev2 = s_prev
-        s_prev = s
-    return s_prev2 ** 2 + s_prev ** 2 - coeff * s_prev * s_prev2
 
+## ZADANIE 2.2
 
-frame_size = int(frame_len * fs)
-detected = []
+def resonator_filter(freq, fs, r=0.99):
+    w = 2 * np.pi * freq / fs
+    b = [1 - r]
+    a = [1, -2 * r * np.cos(w), r ** 2]
+    return b, a
 
-for i in range(0, len(signal_raw), frame_size):
-    frame = signal_raw[i:i + frame_size]
-    if len(frame) < frame_size: continue
-    mags = {f: goertzel_mag(frame, f, fs) for f in all_freqs}
+dtmf_freqs = dtmf_low + dtmf_high
 
-    row = max(row_freqs, key=lambda f: mags[f])
-    col = max(col_freqs, key=lambda f: mags[f])
+for t in selected_times:
+    i = int(t / segment_duration)
+    segment = sX[i*N:(i+1)*N]
 
-    if mags[row] > 1e4 and mags[col] > 1e4:  # Próg detekcji
-        detected.append(dtmf_freqs.get((row, col), '?'))
-
-print("Zdekodowana sekwencja:", ''.join(detected))
-
-
-# -------------------------------
-# 5. Opcjonalne: Bank filtrów IIR (bardziej precyzyjne)
-# -------------------------------
-def build_dtmf_filterbank(fs, bandwidth=20):
-    filters = {}
-    for f in all_freqs:
-        low = f - bandwidth / 2
-        high = f + bandwidth / 2
-        sos = signal.butter(4, [low / (fs / 2), high / (fs / 2)], btype='bandpass', output='sos')
-        filters[f] = sos
-    return filters
-
-
-filterbank = build_dtmf_filterbank(fs)
-detected_iir = []
-
-for i in range(0, len(signal_raw), frame_size):
-    frame = signal_raw[i:i + frame_size]
     energies = {}
-    for f, sos in filterbank.items():
-        filtered = signal.sosfilt(sos, frame)
-        energies[f] = np.sum(filtered ** 2)
-    row = max(row_freqs, key=lambda f: energies[f])
-    col = max(col_freqs, key=lambda f: energies[f])
-    if energies[row] > 0.01 and energies[col] > 0.01:
-        detected_iir.append(dtmf_freqs.get((row, col), '?'))
 
-print("Sekwencja z banku filtrów IIR:", ''.join(detected_iir))
+    print(f"\n--- Czas {t:.1f}s: Energia sygnału po filtrach IIR ---")
+    for freq in dtmf_freqs:
+        b, a = resonator_filter(freq, fs, r=0.99)
+        filtered = lfilter(b, a, segment)
+        energy = np.sum(filtered**2)
+        energies[freq] = energy
+        print(f"{freq} Hz: {energy:.2e}")
+
+    low_freq = max(dtmf_low, key=lambda f: energies[f])
+    high_freq = max(dtmf_high, key=lambda f: energies[f])
+
+    key = dtmf_keys.get((low_freq, high_freq), '?')
+    print(f"==> Naciśnięto '{key}' (low: {low_freq} Hz, high: {high_freq} Hz)")
+
+
+## ZADANIE 2.3 (OPCJONALNIE)
+#ten algorytm decyzyjny jest w zadaniu 2.1 i 2.2 jak wybiera te maksymalne częstotliwości i tam wyznacza wystukane cyfry

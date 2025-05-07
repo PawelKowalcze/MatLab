@@ -1,111 +1,127 @@
 import scipy.io
-import numpy as np
 import matplotlib.pyplot as plt
-from scipy import signal
+import numpy as np
+from scipy.signal import bilinear, lfilter, zpk2tf, freqz, TransferFunction
 
-# 1. Wczytaj dane z butter.mat
-mat_data = scipy.io.loadmat("butter.mat")
-z = mat_data['z']
-p = mat_data['p']
-k = mat_data['k']
+# Load data from butter.mat
+mat_data = scipy.io.loadmat('butter.mat')
+z, p, k = mat_data['z'].flatten(), mat_data['p'].flatten(), mat_data['k'].flatten()
 
-# Sprawdzenie i poprawa formatu danych
-z = np.ravel(z)  # Upewnij się, że zera są jednowymiarowe
-p = np.ravel(p)  # Upewnij się, że bieguny są jednowymiarowe
-k = np.isscalar(k) if np.size(k) == 1 else k  # Upewnij się, że wzmocnienie jest skalarem
+# Parameters
+fs = 16000
+f_low, f_high = 1189, 1229
 
-# Parametry
-fs = 16000  # Hz
-f_low = 1189
-f_high = 1229
-
-# 2. Utwórz filtr analogowy H(s)
-H_s = signal.ZerosPolesGain(z, p, k)
-
-# 3. Konwersja biliniowa do postaci cyfrowej H(z)
-H_z = H_s.to_tf().to_discrete(dt=1/fs, method='bilinear')
-
-# 3a. Prewarp częstotliwości graniczne
-T = 1 / fs
-omega1 = 2 / T * np.tan(np.pi * f_low / fs)
-omega2 = 2 / T * np.tan(np.pi * f_high / fs)
-
-# 3b. Wyznacz środkową i szerokość pasma (do konwersji z LP -> BP)
-omega0 = np.sqrt(omega1 * omega2)      # środkowa częstotliwość
-B = omega2 - omega1                    # szerokość pasma
-
-# 3c. Filtr prototypowy LP: przeniesienie LP -> BP -> biliniowa
-z_bp, p_bp, k_bp = signal.lp2bp_zpk(z, p, k, wo=omega0, bw=B)
-b_s, a_s = signal.zpk2tf(z_bp, p_bp, k_bp)
-b_z, a_z = signal.bilinear(b_s, a_s, fs=fs)
-H_z_corrected = signal.TransferFunction(b_z, a_z, dt=1/fs)
+# Convert to transfer function (analog filter)
+b_s, a_s = zpk2tf(z, p, k) # do klasycznej postaci transmitancji
 
 
-# 4. Wygeneruj charakterystyki częstotliwościowe
-w_analog, h_analog = signal.freqs_zpk(z, p, k, worN=1024)
-w_digital, h_digital = signal.freqz(H_z.num, H_z.den, worN=1024, fs=fs)
+# Frequency response of the analog filter
+w, h = freqz(b_s, a_s, worN=8000, fs=fs) # odpowiedz filtra
 
-# 5. Narysuj porównanie charakterystyk
-plt.figure(figsize=(10, 5))
-plt.plot(w_analog / (2*np.pi), 20 * np.log10(abs(h_analog)), label="Analogowy H(s)")
-plt.plot(w_digital, 20 * np.log10(abs(h_digital)), label="Cyfrowy H(z)")
-plt.axvline(f_low, color='r', linestyle='--', label='Częstotliwości graniczne')
-plt.axvline(f_high, color='r', linestyle='--')
-plt.title("Charakterystyki H(s) vs H(z)")
-plt.xlabel("Częstotliwość [Hz]")
-plt.ylabel("Wzmocnienie [dB]")
-plt.grid()
+
+# Plot analog filter response
+plt.figure()
+plt.plot(w, 20 * np.log10(abs(h)), label='Analog H(s)')
+plt.axvline(f_low, color='r', linestyle='--', label='f_low')
+plt.axvline(f_high, color='g', linestyle='--', label='f_high')
+plt.title('Characteristic amplitude-frequency of analog')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Amplitude (dB)')
 plt.legend()
-plt.tight_layout()
+plt.grid()
 plt.show()
 
-# 6. Sygnał testowy (suma sinusów 1209 i 1272 Hz)
+
+# Convert analog filter to digital using bilinear transform
+b_z, a_z = bilinear(b_s, a_s, fs) # zmiana s na z dysktertna
+w_z, h_z = freqz(b_z, a_z, worN=8000, fs=fs)
+
+
+# Plot digital filter response
+plt.figure()
+plt.plot(w_z, 20 * np.log10(abs(h_z)), label='Digital H(z)')
+plt.axvline(f_low, color='r', linestyle='--', label='f_low')
+plt.axvline(f_high, color='g', linestyle='--', label='f_high')
+plt.title('Amplitude-frequency characteristics of digital filter')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Amplitude (dB)')
+plt.legend()
+plt.grid()
+plt.show()
+
+# Generate test signal
 t = np.arange(0, 1, 1/fs)
-x = np.sin(2*np.pi*1209*t) + np.sin(2*np.pi*1272*t)
+f1, f2 = 1209, 1272
+signal = np.cos(2 * np.pi * f1 * t) + np.cos(2 * np.pi * f2 * t)
 
-# 7. Filtracja sygnału
-y_filter = signal.lfilter(H_z.num, H_z.den, x)
+# Signal filtration (manual implementation)
+filtered_signal = np.zeros_like(signal)
+for n in range(len(signal)):
+    for i in range(len(b_z)):
+        if n - i >= 0:
+            filtered_signal[n] += b_z[i] * signal[n - i]
+    for j in range(1, len(a_z)):
+        if n - j >= 0:
+            filtered_signal[n] -= a_z[j] * filtered_signal[n - j]
+    filtered_signal[n] /= a_z[0]
 
-# 8. Porównanie w dziedzinie czasu
-plt.figure(figsize=(10, 4))
-plt.plot(t, x, label="Sygnał oryginalny", alpha=0.6)
-plt.plot(t, y_filter, label="Po filtracji (lfilter)", alpha=0.8)
-plt.xlim(0, 0.01)  # tylko początek dla przejrzystości
+# Signal filtration using scipy
+filtered_signal_lib = lfilter(b_z, a_z, signal)
+
+# Comparison in time domain
+plt.figure()
+plt.plot(t, signal, label='Original signal')
+plt.plot(t, filtered_signal, label='Filtered signal (manual)')
+plt.plot(t, filtered_signal_lib, label='Filtered signal (scipy)', linestyle='--')
+plt.title('Comparison of filtered and original signal in time domain')
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
 plt.legend()
-plt.title("Sygnał przed i po filtracji")
-plt.xlabel("Czas [s]")
-plt.ylabel("Amplituda")
 plt.grid()
-plt.tight_layout()
 plt.show()
 
-# Charakterystyki nowego filtra
-w_digital_corrected, h_digital_corrected = signal.freqz(H_z_corrected.num, H_z_corrected.den, worN=1024, fs=fs)
+# Comparison in frequency domain
+fft_original = np.abs(np.fft.fft(signal))
+fft_filtered = np.abs(np.fft.fft(filtered_signal))
+fft_filtered_lib = np.abs(np.fft.fft(filtered_signal_lib))
+frequencies = np.fft.fftfreq(len(signal), 1/fs)
 
-plt.figure(figsize=(10, 5))
-plt.plot(w_digital, 20 * np.log10(abs(h_digital)), label="Bez korekty prototypu")
-plt.plot(w_digital_corrected, 20 * np.log10(abs(h_digital_corrected)), label="Z korektą prototypu")
-plt.axvline(f_low, color='r', linestyle='--', label='1189 Hz')
-plt.axvline(f_high, color='r', linestyle='--', label='1229 Hz')
-plt.title("Porównanie H(z) z i bez korekty prototypu")
-plt.xlabel("Częstotliwość [Hz]")
-plt.ylabel("Wzmocnienie [dB]")
-plt.grid()
+plt.figure()
+plt.plot(frequencies[:len(frequencies)//2], fft_original[:len(frequencies)//2], label='Original signal')
+plt.plot(frequencies[:len(frequencies)//2], fft_filtered[:len(frequencies)//2], label='Filtered signal (manual)')
+plt.plot(frequencies[:len(frequencies)//2], fft_filtered_lib[:len(frequencies)//2], label='Filtered signal (scipy)', linestyle='--')
+plt.title('Comparison of filtered and original signal in frequency domain')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Amplitude')
 plt.legend()
-plt.tight_layout()
+plt.grid()
 plt.show()
 
-# Filtracja sygnału poprawionym filtrem
-y_corrected = signal.lfilter(H_z_corrected.num, H_z_corrected.den, x)
+# Optional pre-warping
+T = 1 / fs
+omega_low = 2 * np.pi * f_low
+omega_high = 2 * np.pi * f_high
+omega_warped_low = 2 / T * np.tan(omega_low * T / 2)
+omega_warped_high = 2 / T * np.tan(omega_high * T / 2)
 
-plt.figure(figsize=(10, 4))
-plt.plot(t, x, label="Oryginalny sygnał", alpha=0.5)
-plt.plot(t, y_corrected, label="Po filtracji (z korektą)", alpha=0.8)
-plt.xlim(0, 0.01)
-plt.title("Sygnał po filtracji filtrem z korektą prototypu")
-plt.xlabel("Czas [s]")
-plt.ylabel("Amplituda")
-plt.grid()
+# Rescale analog filter poles
+p_warped = p * (omega_warped_low / omega_low)
+b_s_warped, a_s_warped = zpk2tf(z, p_warped, k)
+
+# Convert to digital filter after pre-warping
+b_z_warped, a_z_warped = bilinear(b_s_warped, a_s_warped, fs)
+w_z_warped, h_z_warped = freqz(b_z_warped, a_z_warped, worN=8000, fs=fs)
+
+# Plot pre-warping results
+plt.figure()
+plt.plot(w, 20 * np.log10(abs(h)), label='Analog H(s)')
+plt.plot(w_z, 20 * np.log10(abs(h_z)), label='Digital H(z)')
+plt.plot(w_z_warped, 20 * np.log10(abs(h_z_warped)), label='Digital Hw(z) (pre-warping)')
+plt.axvline(f_low, color='r', linestyle='--', label='f_low')
+plt.axvline(f_high, color='g', linestyle='--', label='f_high')
+plt.title('Amplitude-frequency characteristics with pre-warping')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Amplitude (dB)')
 plt.legend()
-plt.tight_layout()
+plt.grid()
 plt.show()
