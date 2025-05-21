@@ -81,3 +81,15 @@ disp(['Częstotliwość f3: ' num2str(f3)]);
 disp(['Amplituda A1: ' num2str(A1)]);
 disp(['Amplituda A2: ' num2str(A2)]);
 disp(['Amplituda A3: ' num2str(A3)]);
+
+%% Odtworzenie próbek sygnału m(t)
+t_recon = (0:length(m)-1)/fs;
+m_recon = m .* cos(2*pi*fc*t_recon);
+%% Porównanie próbek: wykres
+
+subplot(2,1,2);
+plot(t_recon, m_recon, 'r', 'LineWidth',1);
+title('Zrekonstruowany sygnał m(t)');
+xlabel('Czas [s]'); ylabel('Amplituda');
+grid on;
+

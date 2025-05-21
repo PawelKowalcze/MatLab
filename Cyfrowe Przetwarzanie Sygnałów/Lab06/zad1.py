@@ -12,11 +12,11 @@ fs = 16000
 f_low, f_high = 1189, 1229
 
 # Convert to transfer function (analog filter)
-b_s, a_s = zpk2tf(z, p, k) # do klasycznej postaci transmitancji
+b_s, a_s = zpk2tf(z, p, k) # do klasycznej postaci transformacji
 
 
 # Frequency response of the analog filter
-w, h = freqz(b_s, a_s, worN=8000, fs=fs) # odpowiedz filtra
+w, h = freqz(b_s, a_s, worN=8000, fs=fs) # tworzą transmitancję
 
 
 # Plot analog filter response
@@ -97,7 +97,7 @@ plt.legend()
 plt.grid()
 plt.show()
 
-# Optional pre-warping
+# Optional pre-warping -przesuwam w dziedzinie częstotliwości aby uwzględnić nieliniowość transmisji
 T = 1 / fs
 omega_low = 2 * np.pi * f_low
 omega_high = 2 * np.pi * f_high

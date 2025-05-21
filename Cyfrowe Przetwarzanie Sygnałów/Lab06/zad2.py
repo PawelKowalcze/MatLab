@@ -26,7 +26,7 @@ w_z, h_z = freqz(b_z, a_z, worN=8000, fs=fs)
 # Wczytanie pliku audio
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    fs, sX = wavfile.read('s7.wav')
+    fs, sX = wavfile.read('s8.wav')
 
 # Obliczenie spektrogramu sygnału przed filtracją
 f, t, Sxx = spectrogram(sX, fs=fs, nperseg=4096, noverlap=4096-512, scaling='density')
