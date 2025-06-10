@@ -91,7 +91,7 @@ x2wav_interp = interp1(1:length(x2wav), x2wav, vector2);
 miks = x1wav_interp;
 miks(1:length(x2wav_interp)) = miks(1:length(x2wav_interp)) + x2wav_interp;
 
-%sound(miks, f_wav); % odsłuch
+sound(miks, f_wav); % odsłuch
 
 %% Miksowanie syntetycznych sygnałów metodą interpolacji liniowej
 target_fs = 48e3;
