@@ -1,14 +1,17 @@
 close all; clear all;
-I2 = ; % obraz wynikowy otrzymany z apomoca skryptu auto_tabdet.m;
+% obraz wynikowy otrzymany z apomoca skryptu auto_tabdet.m;
 % --- lub rêcznie wyciêta ramka:
-% I2 = imread('tab_dop.jpg');
-% figure; imshow(I2,[]); title('I2 - wyciêta ramka')
+I2 = imread('tab_dop.jpg');
+figure; imshow(I2,[]); title('I2 - wyciêta ramka')
 
 
 %% 5b dopasowanie obrazów
 I1 = imread('tab_wz.jpg'); 
+
+
 % ---- ewentualne przejœcie do skali szaroœci
-% I1 =  double(rgb2gray(I));
+I1 =  double(im2gray(I1));
+I2 =  double(im2gray(I2));
 I2 = imresize(I2,[size(I1,1) size(I1,2)]); % skalowanie (czasem wymagane
 % z racji sposobu dzia³ania funkcji jointhist)
 figure; imshow(I1,[]); title('I1 - wzorcowy')
@@ -22,7 +25,7 @@ I1=s256(double(I1));
 % I2 = imfilter(I2, H, 'symmetric','same');         %  obu obrazów (ZRÓB SAM: conv2())
 
 
-Iter = 50; % liczba iteracji
+Iter = 200; % liczba iteracji
 [NMp, PP] = MI2(I1,I2); NMp                            %  estymacja entropii wzajemnej
 PPlog = log(PP+1); PPlog = abs(PPlog-max(PPlog(:)));   % skalowanie histogramu
 figure, subplot(1,3,1), imshow(I1,[]),    title('Obraz odniesienia I1')
