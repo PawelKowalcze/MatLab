@@ -74,7 +74,7 @@ function auto_tabdet()
     bin_letters = gray_crop < letter_thresh; % litery to piksele < 100
     
     % Wyznacz tło (piksele nie będące literami) – użyj mediany
-    bg_val = mean(gray_crop(~bin_letters)); % jasność tła, -60 dla car1.jpg
+    bg_val = mean(gray_crop(~bin_letters)) - 60; % jasność tła, -60 dla car1.jpg
     
     % Stwórz kopię i zamień litery na tło
     gray_no_text = gray_crop;

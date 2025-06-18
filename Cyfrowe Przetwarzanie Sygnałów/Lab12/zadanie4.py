@@ -157,7 +157,7 @@ def main():
         "paski.png": [24.72, 26.22, 33.49, 42.82, 68.69]
     }
 
-    '''
+
     image_files = ["lena512.png", "lena256.png", "barbara512.png", "paski.png"]
     for image_file in image_files:
         path = os.path.join(image_file)
@@ -180,7 +180,7 @@ def main():
 
         psnr_results[image_file] = psnrs
         psnr_results_jpeg[image_file] = psnrs_jpeg
-        '''
+
 
     for key in psnr_results:
         plt.plot(qs, psnr_results[key], label="Moj algorytm")
@@ -191,6 +191,24 @@ def main():
         plt.legend()
         plt.grid()
         plt.show()
+
+    plt.figure(figsize=(12, 7))
+    markers = ['o', 's', '^', 'D']
+    linestyles = ['-', '--']
+
+    for idx, image_file in enumerate(image_files):
+        plt.plot(qs, psnr_results[image_file], marker=markers[idx], linestyle=linestyles[0],
+                 label=f"{image_file} (mój algorytm)")
+        plt.plot(qs, psnr_results_jpeg[image_file], marker=markers[idx], linestyle=linestyles[1],
+                 label=f"{image_file} (JPEG z PIL)")
+
+    plt.xlabel("Wartość q (kwantyzacja)")
+    plt.ylabel("PSNR (dB)")
+    plt.title("Porównanie PSNR do q – Mój algorytm vs JPEG z PIL")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     main()
